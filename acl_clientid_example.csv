@@ -1,0 +1,2 @@
+clientid,topic,action,access
+example-clientid,example-topic,pubsub,deny
