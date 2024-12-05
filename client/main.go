@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"crypto/tls"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -13,14 +14,14 @@ import (
 	"github.com/go-pg/pg/v10/orm"
 )
 
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "postgres"
-	password = "1357902479"
-	dbname   = "Devices"
-	sslMode  = "disable"
-)
+// const (
+// 	host     = "localhost"
+// 	port     = 5432
+// 	user     = "postgres"
+// 	password = "1357902479"
+// 	dbname   = "Devices"
+// 	sslMode  = "disable"
+// )
 
 type Device struct {
 	ClientId   string
@@ -31,12 +32,17 @@ type Device struct {
 type User struct {
 	Username string
 	Password string
+	ClientId string
+	Topic    string
+	Action   string
+	Access   string
 }
 
-func connectDB() *pg.DB {
-	//url := fmt.Sprintf("postgres://%s:%s@%s:%d/%s%s",
-	//	user, password, host, port, dbname, sslMode)
-	opt, errors := pg.ParseURL("postgres://postgres:1357902479@localhost:5432/Devices?sslmode=disable")
+// "postgres://postgres:1357902479@localhost:5432/Devices?sslmode=disable"
+func ConnectDB(user string, password string, dbname string) *pg.DB {
+	url := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		user, password, "localhost", 5432, dbname, "disable")
+	opt, errors := pg.ParseURL(url)
 	if errors != nil {
 		log.Fatal("Error connecting to database:", errors)
 	}
@@ -45,14 +51,14 @@ func connectDB() *pg.DB {
 	if db == nil {
 		log.Fatal("Faild to connect to the database")
 	} else {
-		log.Print("Succsesfuly connected to the database")
+		//log.Print("Succsesfuly connected to the database")
 	}
 	return db
 }
 
 var db *pg.DB
 
-func creareSchema() error {
+func CreareSchema() error {
 	err := db.Model((*Device)(nil)).CreateTable(&orm.CreateTableOptions{
 		IfNotExists: true,
 	})
@@ -68,11 +74,29 @@ func creareSchema() error {
 	return err
 }
 
-func init() {
-	db = connectDB()
-	err := creareSchema()
+func Init(user string, password string, dbname string) {
+	db = ConnectDB(user, password, dbname)
+	err := CreareSchema()
 	if err != nil {
-		log.Fatal("Faild to create tabel", err)
+		log.Fatal("Faild to create table", err)
+	}
+}
+
+func GetUsers() []User {
+	var users []User
+	err := db.Model(users).Select()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return users
+
+}
+
+func AddNewUsers(users []User) {
+
+	_, err := db.Model(users).Insert()
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -88,7 +112,7 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 	fmt.Printf("Connect lost: %v", err)
 }
 
-func main() {
+func ConnectMqtt(clientID string, username string, password string) {
 	var broker = "r44a800d.ala.eu-central-1.emqxsl.com"
 	var port = 8883
 	opts := mqtt.NewClientOptions()
@@ -96,9 +120,9 @@ func main() {
 	tlsConfig := NewTlsConfig()
 	opts.SetTLSConfig(tlsConfig)
 	// other options
-	opts.SetClientID("go_mqtt_client")
-	opts.SetUsername("PC")
-	opts.SetPassword("public")
+	opts.SetClientID(clientID) //"go_mqtt_client"
+	opts.SetUsername(username) //"PC"
+	opts.SetPassword(password) //"public"
 	opts.SetDefaultPublishHandler(messagePubHandler)
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
@@ -107,13 +131,13 @@ func main() {
 		panic(token.Error())
 	}
 
-	sub(client)
-	publish(client)
+	Sub(client)
+	//Publish(client)
 
-	client.Disconnect(250)
+	//client.Disconnect(250)
 }
 
-func publish(client mqtt.Client) {
+func Publish(client mqtt.Client) {
 	num := 10
 	for i := 0; i < num; i++ {
 		text := fmt.Sprintf("Message %d", i)
@@ -123,7 +147,7 @@ func publish(client mqtt.Client) {
 	}
 }
 
-func sub(client mqtt.Client) {
+func Sub(client mqtt.Client) {
 	topic := "topic/test"
 	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
@@ -132,7 +156,11 @@ func sub(client mqtt.Client) {
 
 func NewTlsConfig() *tls.Config {
 	certpool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile("C:\\Users\\dedde\\Desktop\\Kurs\\main\\emqxsl-ca.crt")
+	path, erro := filepath.Abs("./emqxsl-ca.crt")
+	if erro != nil {
+		panic(erro)
+	}
+	ca, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
