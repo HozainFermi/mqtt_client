@@ -9,9 +9,13 @@ import (
 func main() {
 	app := tview.NewApplication()
 	pages := tview.NewPages()
+	// str := systeminfo.GetMemUsage()
+	// str += systeminfo.GetPercent()
+	// str += systeminfo.GetPercentEvery()
 
+	pgs.DbConnectPage(app, pages) //!
 	pgs.MqttClientsPage(app, pages)
-	pgs.DbConnectPage(app, pages)
+	pgs.MonitoringPage(app, pages)
 
 	pages.SwitchToPage("DbConnectPage")
 

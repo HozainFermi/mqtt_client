@@ -57,6 +57,7 @@ func ConnectDB(user string, password string, dbname string) *pg.DB {
 }
 
 var db *pg.DB
+var client mqtt.Client
 
 func CreareSchema() error {
 	err := db.Model((*Device)(nil)).CreateTable(&orm.CreateTableOptions{
@@ -84,7 +85,7 @@ func Init(user string, password string, dbname string) {
 
 func GetUsers() []User {
 	var users []User
-	err := db.Model(users).Select()
+	err := db.Model(&users).Select()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -101,11 +102,15 @@ func AddNewUsers(users []User) {
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	//fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("Connected")
+	go func() {
+		time.Sleep(2000)
+		fmt.Println("Connected")
+	}()
+	//fmt.Println("Connected")
 }
 
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
@@ -126,32 +131,35 @@ func ConnectMqtt(clientID string, username string, password string) {
 	opts.SetDefaultPublishHandler(messagePubHandler)
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
-	client := mqtt.NewClient(opts)
+	client = mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
-	Sub(client)
+	Sub(client, "topic/commands")
 	//Publish(client)
 
 	//client.Disconnect(250)
 }
 
-func Publish(client mqtt.Client) {
+func Publish(client mqtt.Client, topic string) {
 	num := 10
 	for i := 0; i < num; i++ {
 		text := fmt.Sprintf("Message %d", i)
-		token := client.Publish("topic/test", 0, false, text)
+		token := client.Publish(topic, 0, false, text)
 		token.Wait()
 		time.Sleep(time.Second)
 	}
 }
 
-func Sub(client mqtt.Client) {
-	topic := "topic/test"
+func Sub(client mqtt.Client, topicname string) {
+	topic := topicname
 	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
-	fmt.Printf("Subscribed to topic: %s", topic)
+	//fmt.Printf("Subscribed to topic: %s", topic)
+}
+func DisconnectMQTT() {
+	client.Disconnect(250)
 }
 
 func NewTlsConfig() *tls.Config {
