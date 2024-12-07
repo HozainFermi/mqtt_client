@@ -155,7 +155,8 @@ func StartInfoTextView(app *tview.Application, info *tview.TextArea) {
 				for {
 					if client.Flag && counter < 2 {
 						time.Sleep(refreshInterval)
-						str = systeminfo.GetMemUsage()
+						str = "\n" + client.GetCurrentUser() + "\n"
+						str += systeminfo.GetMemUsage()
 						str += systeminfo.GetPercent()
 						str += systeminfo.GetPercentEvery()
 						app.QueueUpdateDraw(func() {

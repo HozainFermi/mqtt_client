@@ -40,7 +40,6 @@ type User struct {
 
 var Flag bool = false
 
-// "postgres://postgres:1357902479@localhost:5432/Devices?sslmode=disable"
 func ConnectDB(user string, password string, dbname string) *pg.DB {
 	url := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		user, password, "localhost", 5432, dbname, "disable")
@@ -60,6 +59,7 @@ func ConnectDB(user string, password string, dbname string) *pg.DB {
 
 var db *pg.DB
 var client mqtt.Client
+var opts *mqtt.ClientOptions
 
 func CreareSchema() error {
 	err := db.Model((*Device)(nil)).CreateTable(&orm.CreateTableOptions{
@@ -93,6 +93,10 @@ func GetUsers() []User {
 	}
 	return users
 
+}
+
+func GetCurrentUser() string {
+	return opts.Username + " " + opts.ClientID
 }
 
 func AddNewUsers(users []User) {
@@ -129,7 +133,7 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 func ConnectMqtt(clientID string, username string, password string) {
 	var broker = "r44a800d.ala.eu-central-1.emqxsl.com"
 	var port = 8883
-	opts := mqtt.NewClientOptions()
+	opts = mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("ssl://%s:%d", broker, port))
 	tlsConfig := NewTlsConfig()
 	opts.SetTLSConfig(tlsConfig)
@@ -141,6 +145,7 @@ func ConnectMqtt(clientID string, username string, password string) {
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
 	client = mqtt.NewClient(opts)
+
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
