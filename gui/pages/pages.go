@@ -1,7 +1,7 @@
 package pages
 
 import (
-	client "kurs/client"
+	"kurs/client"
 	"kurs/systeminfo"
 	"time"
 
@@ -18,9 +18,13 @@ var clientusername string = ""
 var clientpassword string = ""
 
 var users []client.User
-var view *tview.TextView
 
-var flag bool = false
+//var info *tview.TextArea
+
+var str string = ""
+var counter int = 0
+
+const refreshInterval = 500 * time.Millisecond
 
 /*--DbConnectPage--*/
 func DbConnectPage(app *tview.Application, pages *tview.Pages) {
@@ -115,24 +119,20 @@ func connectHandler(app *tview.Application, pages *tview.Pages) {
 	//var str string
 
 	client.ConnectMqtt(clientID, clientusername, clientpassword)
-
-	//str = systeminfo.GetVideocard()
-
 	MonitoringPage(app, pages)
 	pages.SwitchToPage("MonitoringPage")
-
+	//go flaghandler(app)
 }
 
 /*--MonitoringPage--*/
 func MonitoringPage(app *tview.Application, pages *tview.Pages) {
 
-	const refreshInterval = 500 * time.Millisecond
-
 	info := tview.NewTextArea().SetPlaceholder("Here will be a system data")
 	info.SetBorder(true)
 
 	btns := tview.NewFlex().SetDirection(tview.FlexColumn).
-		AddItem(tview.NewButton("Start monitoring").SetSelectedFunc(func() { flag = true; StartInfoTextView(app, info, refreshInterval, flag) }), 0, 1, false).
+		AddItem(tview.NewButton("Start monitoring").SetSelectedFunc(func() { client.Flag = true; StartInfoTextView(app, info) }), 0, 1, false).
+		AddItem(tview.NewButton("Stop monitoring").SetSelectedFunc(func() { client.Flag = false }), 0, 1, false).
 		AddItem(tview.NewButton("Save").SetSelectedFunc(saveInfoHandler), 0, 1, false).
 		AddItem(tview.NewButton("Disconnect").SetSelectedFunc(func() { disconnectHandler(pages) }), 0, 1, false)
 	btns.SetBorder(true)
@@ -141,38 +141,52 @@ func MonitoringPage(app *tview.Application, pages *tview.Pages) {
 	flex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(info, 0, 10, false).
 		AddItem(btns, 0, 1, false)
-
 	flex.SetBorder(true)
-
 	pages.AddPage("MonitoringPage", flex, true, false)
-
 }
 
-func StartInfoTextView(app *tview.Application, view *tview.TextArea, interval time.Duration, flag bool) {
+func StartInfoTextView(app *tview.Application, info *tview.TextArea) {
 
 	go func() {
 		for {
-			if flag {
-				time.Sleep(interval)
-				str := systeminfo.GetVideocard()
-				str += systeminfo.GetMemUsage()
-				str += systeminfo.GetPercent()
-				str += systeminfo.GetPercentEvery()
+			if client.Flag == true {
+				counter += 1
+				for {
+					if client.Flag && counter < 2 {
+						time.Sleep(refreshInterval)
+						str = systeminfo.GetMemUsage()
+						str += systeminfo.GetPercent()
+						str += systeminfo.GetPercentEvery()
+						app.QueueUpdateDraw(func() {
+							info.SetText(str, false)
+						})
 
-				app.QueueUpdateDraw(func() {
-					view.SetText(str, false)
-				})
+						client.Publish("topic/info", str)
+					} else {
+						counter -= 1
+						break
+					}
+				}
 			}
 		}
 	}()
+}
+
+func flaghandler(app *tview.Application) {
+	// for {
+	// 	if client.Flag == true {
+	// 		StartInfoTextView(app)
+	// 	}
+	// }
 
 }
 
 func saveInfoHandler() {
 
 }
+
 func disconnectHandler(pages *tview.Pages) {
-	flag = false
+	client.Flag = false
 	client.DisconnectMQTT()
 	pages.SwitchToPage("MqttClientsPage")
 }

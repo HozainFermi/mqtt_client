@@ -38,6 +38,8 @@ type User struct {
 	Access   string
 }
 
+var Flag bool = false
+
 // "postgres://postgres:1357902479@localhost:5432/Devices?sslmode=disable"
 func ConnectDB(user string, password string, dbname string) *pg.DB {
 	url := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
@@ -103,6 +105,13 @@ func AddNewUsers(users []User) {
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	//fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	if msg.Topic() == "topic/command" && string(msg.Payload()) == "StartMonitoring" {
+		Flag = true
+		fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	} else if msg.Topic() == "topic/command" && string(msg.Payload()) == "StopMonitoring" {
+		Flag = false
+		fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	}
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -142,14 +151,13 @@ func ConnectMqtt(clientID string, username string, password string) {
 	//client.Disconnect(250)
 }
 
-func Publish(client mqtt.Client, topic string) {
-	num := 10
-	for i := 0; i < num; i++ {
-		text := fmt.Sprintf("Message %d", i)
-		token := client.Publish(topic, 0, false, text)
-		token.Wait()
-		time.Sleep(time.Second)
-	}
+func Publish(topic string, message string) {
+
+	text := fmt.Sprintf("Message %s", message)
+	token := client.Publish(topic, 0, false, text)
+	token.Wait()
+	//time.Sleep(time.Second)
+
 }
 
 func Sub(client mqtt.Client, topicname string) {
