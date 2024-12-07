@@ -105,12 +105,12 @@ func AddNewUsers(users []User) {
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	//fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
-	if msg.Topic() == "topic/command" && string(msg.Payload()) == "StartMonitoring" {
+	if msg.Topic() == "topic/commands" && string(msg.Payload()) == "StartMonitoring" {
 		Flag = true
 		fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
-	} else if msg.Topic() == "topic/command" && string(msg.Payload()) == "StopMonitoring" {
+	} else if msg.Topic() == "topic/commands" && string(msg.Payload()) == "StopMonitoring" {
 		Flag = false
-		fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+		//fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 	}
 }
 

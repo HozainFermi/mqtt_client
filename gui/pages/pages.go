@@ -23,6 +23,7 @@ var users []client.User
 
 var str string = ""
 var counter int = 0
+var disconnectflag bool = false
 
 const refreshInterval = 500 * time.Millisecond
 
@@ -167,6 +168,8 @@ func StartInfoTextView(app *tview.Application, info *tview.TextArea) {
 						break
 					}
 				}
+			} else if disconnectflag {
+				break
 			}
 		}
 	}()
@@ -187,6 +190,7 @@ func saveInfoHandler() {
 
 func disconnectHandler(pages *tview.Pages) {
 	client.Flag = false
+	disconnectflag = true
 	client.DisconnectMQTT()
 	pages.SwitchToPage("MqttClientsPage")
 }
