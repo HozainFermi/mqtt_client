@@ -30,7 +30,7 @@ var counter int = 0
 var disconnectflag bool = false
 var viewmonitoringflag bool = false
 
-const refreshInterval = 500 * time.Millisecond
+const refreshInterval = 1500 * time.Millisecond
 
 /*--DbConnectPage--*/
 func DbConnectPage(app *tview.Application, pages *tview.Pages) {
@@ -169,7 +169,7 @@ func AddUsersHandler(text string, rightmenu *tview.Table) string {
 		if len(user) != 6 {
 			return fmt.Sprintf("Not enought arguments in the %d string", index)
 		}
-		userarray = append(users, client.User{user[0], user[1], user[2], user[3], user[4], user[5]})
+		userarray = append(userarray, client.User{Username: user[0], Password: user[1], ClientId: user[2], Topic: user[3], Action: user[4], Access: user[5]})
 	}
 	for row := len(users); row < len(users)+len(userarray); row++ {
 		color := tcell.ColorWhite
@@ -183,8 +183,8 @@ func AddUsersHandler(text string, rightmenu *tview.Table) string {
 			SetCell(exectrow, 5, &tview.TableCell{Text: userarray[row].Access, Align: align, Color: color})
 	}
 
-	err := client.AddNewUsers(users)
-	if err != nil {
+	err := client.AddNewUsers(userarray)
+	if err == nil {
 		//!!как перерисовать таблицу то бл :(
 		return "\nAdded successfully"
 
@@ -216,7 +216,7 @@ func MonitoringPage(app *tview.Application, pages *tview.Pages) {
 			client.SubToInfoTopic()
 			StartViewMonitoring(app, info)
 		}), 0, 1, false).
-		AddItem(tview.NewButton("Stop monitoring").SetSelectedFunc(func() { client.Flag = false }), 0, 1, false).
+		AddItem(tview.NewButton("Stop monitoring").SetSelectedFunc(func() { client.Flag = false; viewmonitoringflag = false }), 0, 1, false).
 		AddItem(tview.NewButton("Save").SetSelectedFunc(saveInfoHandler), 0, 1, false).
 		AddItem(tview.NewButton("Clear").SetSelectedFunc(func() { info.SetText("", false) }), 0, 1, false).
 		AddItem(tview.NewButton("Disconnect").SetSelectedFunc(func() { disconnectHandler(pages) }), 0, 1, false)
@@ -267,8 +267,9 @@ func StartViewMonitoring(app *tview.Application, info *tview.TextArea) {
 					if viewmonitoringflag && counter < 2 && !client.Flag {
 						time.Sleep(refreshInterval)
 						str = info.GetText()
-						str += client.Payload[0] + "\n"
 						str += client.DisplayInfo
+						// str += client.Payload[0] + "\n"
+						// str += client.DisplayInfo
 						app.QueueUpdateDraw(func() {
 							info.SetText(str, true)
 						})

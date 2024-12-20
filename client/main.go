@@ -44,8 +44,9 @@ type User struct {
 var devices []Device
 var Payload []string
 var infrofrompayload string
-var DisplayInfo string
+var DisplayInfo string = ""
 
+// var Msg mqtt.Message
 var Flag bool = false
 var RecivedCommand string
 
@@ -133,9 +134,11 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 	}
 
 	if msg.Topic() == "topic/info" {
+
+		//fmt.Println(string(msg.Payload()))
 		Payload = strings.Split(string(msg.Payload()), "\n")
 
-		for i := 1; i < len(Payload); i++ {
+		for i := 0; i < len(Payload); i++ {
 			infrofrompayload += Payload[i] + "\n"
 		}
 		DisplayInfo = infrofrompayload
@@ -190,8 +193,8 @@ func ConnectMqtt(clientID string, username string, password string) {
 
 func Publish(topic string, message string) {
 
-	text := fmt.Sprintf("Message %s", message)
-	token := client.Publish(topic, 0, false, text)
+	//text := fmt.Sprintf("Message %s", message)
+	token := client.Publish(topic, 0, false, message)
 	token.Wait()
 	//time.Sleep(time.Second)
 
