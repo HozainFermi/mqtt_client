@@ -163,6 +163,7 @@ func AddUsersHandler(text string, rightmenu *tview.Table) string {
 	var parsedusers []string = strings.Split(text, "\n")
 	var userarray []client.User
 	var user []string
+	var index = 0
 
 	for index, element := range parsedusers {
 		user = strings.Split(element, ",")
@@ -172,15 +173,18 @@ func AddUsersHandler(text string, rightmenu *tview.Table) string {
 		userarray = append(userarray, client.User{Username: user[0], Password: user[1], ClientId: user[2], Topic: user[3], Action: user[4], Access: user[5]})
 	}
 	for row := len(users); row < len(users)+len(userarray); row++ {
+
 		color := tcell.ColorWhite
 		align := tview.AlignLeft
 		exectrow := row + 1
-		rightmenu.SetCell(exectrow, 0, &tview.TableCell{Text: userarray[row].Username, Align: align, Color: color}).
-			SetCell(exectrow, 1, &tview.TableCell{Text: userarray[row].Password, Align: align, Color: color}).
-			SetCell(exectrow, 2, &tview.TableCell{Text: userarray[row].ClientId, Align: align, Color: color}).
-			SetCell(exectrow, 3, &tview.TableCell{Text: userarray[row].Topic, Align: align, Color: color}).
-			SetCell(exectrow, 4, &tview.TableCell{Text: userarray[row].Action, Align: align, Color: color}).
-			SetCell(exectrow, 5, &tview.TableCell{Text: userarray[row].Access, Align: align, Color: color})
+		rightmenu.SetCell(exectrow, 0, &tview.TableCell{Text: userarray[index].Username, Align: align, Color: color}).
+			SetCell(exectrow, 1, &tview.TableCell{Text: userarray[index].Password, Align: align, Color: color}).
+			SetCell(exectrow, 2, &tview.TableCell{Text: userarray[index].ClientId, Align: align, Color: color}).
+			SetCell(exectrow, 3, &tview.TableCell{Text: userarray[index].Topic, Align: align, Color: color}).
+			SetCell(exectrow, 4, &tview.TableCell{Text: userarray[index].Action, Align: align, Color: color}).
+			SetCell(exectrow, 5, &tview.TableCell{Text: userarray[index].Access, Align: align, Color: color})
+
+		index++
 	}
 
 	err := client.AddNewUsers(userarray)
