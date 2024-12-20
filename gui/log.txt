@@ -1,0 +1,17 @@
+
+PC1 go_mqtt_client1
+Memory usage=70%
+CPU usage (combined)=1.04%
+Usage per CPU:
+Usage[0]=9.09
+Usage[1]=0.00
+Usage[2]=3.12
+Usage[3]=0.00
+Usage[4]=0.00
+Usage[5]=1.59
+Usage[6]=0.00
+Usage[7]=0.00
+Usage[8]=0.00
+Usage[9]=1.59
+Usage[10]=0.00
+Usage[11]=73.44

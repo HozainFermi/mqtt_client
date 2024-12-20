@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -15,19 +16,21 @@ import (
 )
 
 // const (
-// 	host     = "localhost"
-// 	port     = 5432
-// 	user     = "postgres"
-// 	password = "1357902479"
-// 	dbname   = "Devices"
-// 	sslMode  = "disable"
+//
+//	host     = "localhost"
+//	port     = 5432
+//	user     = "postgres"
+//	password = "1357902479"
+//	dbname   = "Devices"
+//	sslMode  = "disable"
+//
 // )
+var Broker = "r44a800d.ala.eu-central-1.emqxsl.com"
 
 type Device struct {
-	ClientId   string
-	TempCPU    float32
-	TempGPU    float32
-	UpdateTime time.Time
+	ClientId       string
+	MonitoringData string
+	UpdateTime     time.Time
 }
 type User struct {
 	Username string
@@ -38,7 +41,13 @@ type User struct {
 	Access   string
 }
 
+var devices []Device
+var Payload []string
+var infrofrompayload string
+var DisplayInfo string
+
 var Flag bool = false
+var RecivedCommand string
 
 func ConnectDB(user string, password string, dbname string) *pg.DB {
 	url := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
@@ -47,7 +56,6 @@ func ConnectDB(user string, password string, dbname string) *pg.DB {
 	if errors != nil {
 		log.Fatal("Error connecting to database:", errors)
 	}
-
 	db := pg.Connect(opt)
 	if db == nil {
 		log.Fatal("Faild to connect to the database")
@@ -92,30 +100,54 @@ func GetUsers() []User {
 		log.Fatal(err)
 	}
 	return users
-
 }
 
 func GetCurrentUser() string {
-	return opts.Username + " " + opts.ClientID
+	return opts.ClientID
 }
 
-func AddNewUsers(users []User) {
+func AddNewUsers(users []User) error {
 
-	_, err := db.Model(users).Insert()
+	_, err := db.Model(&users).Insert()
 	if err != nil {
-		panic(err)
+		//panic(err)
+		return err
 	}
+	return nil
+}
+
+func SubToInfoTopic() {
+	Sub(client, "topic/info")
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	//fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+
 	if msg.Topic() == "topic/commands" && string(msg.Payload()) == "StartMonitoring" {
 		Flag = true
-		fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+		//fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 	} else if msg.Topic() == "topic/commands" && string(msg.Payload()) == "StopMonitoring" {
 		Flag = false
 		//fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	} else if msg.Topic() == "topic/commands" {
+		RecivedCommand = string(msg.Payload())
 	}
+
+	if msg.Topic() == "topic/info" {
+		Payload = strings.Split(string(msg.Payload()), "\n")
+
+		for i := 1; i < len(Payload); i++ {
+			infrofrompayload += Payload[i] + "\n"
+		}
+		DisplayInfo = infrofrompayload
+		devices = append(devices, Device{Payload[0], infrofrompayload, time.Now()})
+
+		_, err := db.Model(&devices).Insert()
+		if err != nil {
+			panic(err)
+		}
+		infrofrompayload = ""
+	}
+
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -131,7 +163,7 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 }
 
 func ConnectMqtt(clientID string, username string, password string) {
-	var broker = "r44a800d.ala.eu-central-1.emqxsl.com"
+	var broker = Broker
 	var port = 8883
 	opts = mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("ssl://%s:%d", broker, port))
