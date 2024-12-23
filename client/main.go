@@ -41,7 +41,7 @@ type User struct {
 	Access   string
 }
 
-var devices []Device
+var devices Device
 var Payload []string
 var infrofrompayload string
 var DisplayInfo string = ""
@@ -142,8 +142,8 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 			infrofrompayload += Payload[i] + "\n"
 		}
 		DisplayInfo = infrofrompayload
-		devices = append(devices, Device{Payload[0], infrofrompayload, time.Now()})
-
+		devices = Device{Payload[0], infrofrompayload, time.Now()}
+		time.Sleep(1500 * time.Millisecond)
 		_, err := db.Model(&devices).Insert()
 		if err != nil {
 			panic(err)
