@@ -15,17 +15,7 @@ import (
 	"github.com/go-pg/pg/v10/orm"
 )
 
-// const (
-//
-//	host     = "localhost"
-//	port     = 5432
-//	user     = "postgres"
-//	password = "1357902479"
-//	dbname   = "Devices"
-//	sslMode  = "disable"
-//
-// )
-var Broker = "r44a800d.ala.eu-central-1.emqxsl.com"
+var Broker string
 
 type Device struct {
 	ClientId       string
@@ -173,9 +163,9 @@ func ConnectMqtt(clientID string, username string, password string) {
 	tlsConfig := NewTlsConfig()
 	opts.SetTLSConfig(tlsConfig)
 	// other options
-	opts.SetClientID(clientID) //"go_mqtt_client"
-	opts.SetUsername(username) //"PC"
-	opts.SetPassword(password) //"public"
+	opts.SetClientID(clientID)
+	opts.SetUsername(username)
+	opts.SetPassword(password)
 	opts.SetDefaultPublishHandler(messagePubHandler)
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
@@ -186,17 +176,13 @@ func ConnectMqtt(clientID string, username string, password string) {
 	}
 
 	Sub(client, "topic/commands")
-	//Publish(client)
 
-	//client.Disconnect(250)
 }
 
 func Publish(topic string, message string) {
 
-	//text := fmt.Sprintf("Message %s", message)
 	token := client.Publish(topic, 0, false, message)
 	token.Wait()
-	//time.Sleep(time.Second)
 
 }
 
@@ -204,7 +190,7 @@ func Sub(client mqtt.Client, topicname string) {
 	topic := topicname
 	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
-	//fmt.Printf("Subscribed to topic: %s", topic)
+
 }
 func DisconnectMQTT() {
 	client.Disconnect(250)
