@@ -12,9 +12,9 @@ import (
 	"github.com/rivo/tview"
 )
 
-var username string = "postgres"
-var password string = "1357902479"
-var dbname string = "Devices"
+var username string
+var password string
+var dbname string
 
 var clientID string = ""
 var clientusername string = ""
@@ -22,8 +22,6 @@ var clientpassword string = ""
 
 var users []client.User
 var clientsgrid *tview.Grid
-
-//var info *tview.TextArea
 
 var str string = ""
 var counter int = 0
