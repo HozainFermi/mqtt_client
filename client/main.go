@@ -15,7 +15,7 @@ import (
 	"github.com/go-pg/pg/v10/orm"
 )
 
-var Broker string
+var Broker string = "pe961e19.ala.eu-central-1.emqxsl.com"
 
 type Device struct {
 	ClientId       string

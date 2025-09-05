@@ -1,2 +1,5 @@
 clientid,topic,action,access
-example-clientid,example-topic,pubsub,deny
+go_mqtt_client,topic/commands,pubsub,allow
+go_mqtt_client,topic/info,pubsub,allow
+go_mqtt_client1,topic/commands,pubsub,allow
+go_mqtt_client1,topic/info,pubsub,allow
