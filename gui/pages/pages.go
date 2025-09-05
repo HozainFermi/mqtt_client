@@ -476,15 +476,26 @@ func StartViewMonitoring(app *tview.Application, table *tview.Table, logView *tv
 			if client.DisplayInfo != "" {
 				app.QueueUpdateDraw(func() {
 					// Записываем в лог
-					fmt.Fprintf(logView, "[%s] %s\n",
-						time.Now().Format("15:04:05"),
-						client.DisplayInfo)
+					if !disablelogflag {
+
+						fmt.Fprintf(logView, "[%s] %s\n",
+							time.Now().Format("15:04:05"),
+							client.DisplayInfo)
+
+					}
 
 					// Парсим входящие данные и обновляем таблицу
 					metrics := parseMetrics(client.DisplayInfo)
 					clientID := extractClientID(client.DisplayInfo)
 					if clientID != "" {
 						updateClientInTable(table, clientID, metrics)
+					}
+
+					err := client.SaveMonitoringData(clientID, client.DisplayInfo)
+					if err != nil {
+						fmt.Fprintf(logView, "[red]Ошибка сохранения в БД: %s[white]\n", err.Error())
+					} else {
+						//fmt.Fprintf(logView, "[green]Данные сохранены в БД[white]\n")
 					}
 
 					updateStatusBar(statusBar, "Получены новые данные")

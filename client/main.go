@@ -143,6 +143,20 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 
 }
 
+func SaveMonitoringData(clientID string, data string) error {
+	device := Device{
+		ClientId:       clientID,
+		MonitoringData: data,
+		UpdateTime:     time.Now(),
+	}
+
+	_, err := db.Model(&device).Insert()
+	if err != nil {
+		return fmt.Errorf("ошибка сохранения в БД: %v", err)
+	}
+	return nil
+}
+
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	go func() {
 		time.Sleep(2000)
