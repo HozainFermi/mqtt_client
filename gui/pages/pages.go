@@ -223,7 +223,7 @@ func MonitoringPage(app *tview.Application, pages *tview.Pages) {
 	table := tview.NewTable().
 		SetBorders(true).
 		SetSelectable(true, false)
-	table.SetBorder(true).SetTitle(" Данные клиентов ")
+	table.SetBorder(true).SetTitle(" Данные клиентов ").SetBorderPadding(0, 0, 1, 1)
 
 	// Устанавливаем заголовки таблицы
 	setTableHeaders(table)
@@ -307,23 +307,25 @@ func updateClientInTable(table *tview.Table, clientID string, metrics map[string
 		tview.NewTableCell(clientID).
 			SetAlign(tview.AlignLeft))
 
-	cpuValue := data.Metrics["cpu"]
 	table.SetCell(data.RowIndex, 1,
-		tview.NewTableCell(cpuValue).
+		tview.NewTableCell(data.Metrics["cpu"]).
 			SetAlign(tview.AlignCenter).
-			SetTextColor(getValueColor(cpuValue)))
+			SetTextColor(getValueColor(data.Metrics["cpu"])))
 
 	table.SetCell(data.RowIndex, 2,
 		tview.NewTableCell(data.Metrics["memory"]).
-			SetAlign(tview.AlignCenter))
+			SetAlign(tview.AlignCenter).
+			SetTextColor(getValueColor(data.Metrics["memory"])))
 
 	table.SetCell(data.RowIndex, 3,
 		tview.NewTableCell(data.Metrics["disk"]).
-			SetAlign(tview.AlignCenter))
+			SetAlign(tview.AlignCenter).
+			SetTextColor(getValueColor(data.Metrics["disk"])))
 
 	table.SetCell(data.RowIndex, 4,
 		tview.NewTableCell(data.Metrics["network"]).
-			SetAlign(tview.AlignCenter))
+			SetAlign(tview.AlignCenter).
+			SetTextColor(getValueColor(data.Metrics["network"])))
 
 	table.SetCell(data.RowIndex, 5,
 		tview.NewTableCell(data.LastSeen.Format("15:04:05")).
@@ -470,23 +472,43 @@ func parseMetrics(data string) map[string]string {
 	lines := strings.Split(data, "\n")
 
 	for _, line := range lines {
-		if strings.Contains(line, "CPU") {
-			metrics["cpu"] = extractValue(line)
-		} else if strings.Contains(line, "Memory") {
-			metrics["memory"] = extractValue(line)
+		line = strings.TrimSpace(line)
+		if strings.Contains(line, "Memory usage=") {
+			metrics["memory"] = extractValueAfterEquals(line)
+		} else if strings.Contains(line, "CPU usage (combined)=") {
+			metrics["cpu"] = extractValueAfterEquals(line)
 		} else if strings.Contains(line, "Disk") {
-			metrics["disk"] = extractValue(line)
+			metrics["disk"] = extractValueAfterEquals(line)
 		} else if strings.Contains(line, "Network") {
-			metrics["network"] = extractValue(line)
+			metrics["network"] = extractValueAfterEquals(line)
+		}
+	}
+
+	// Если нет combined CPU, пытаемся найти другое CPU значение
+	if metrics["cpu"] == "" {
+		for _, line := range lines {
+			if strings.Contains(line, "CPU") && strings.Contains(line, "=") && !strings.Contains(line, "Usage[") {
+				metrics["cpu"] = extractValueAfterEquals(line)
+				break
+			}
 		}
 	}
 
 	return metrics
 }
 
+func extractValueAfterEquals(line string) string {
+	// Извлекаем значение после знака равно "Memory usage=77%"
+	parts := strings.Split(line, "=")
+	if len(parts) > 1 {
+		return strings.TrimSpace(parts[1])
+	}
+	return ""
+}
+
 func extractValue(line string) string {
 	// Извлекаем значение из строки типа "CPU Usage: 45%"
-	parts := strings.Split(line, ":")
+	parts := strings.Split(line, "=")
 	if len(parts) > 1 {
 		return strings.TrimSpace(parts[1])
 	}

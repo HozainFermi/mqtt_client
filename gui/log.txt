@@ -1,153 +1,136 @@
-[18:33:03] go_mqtt_client
-Memory usage=77%
-CPU usage (combined)=0.78%
+[19:29:37] Client: go_mqtt_client
+Memory usage=79%
+CPU usage (combined)=2.64%
 Usage per CPU:
-Usage[0]=0.00
+Usage[0]=10.45
 Usage[1]=0.00
-Usage[2]=1.56
+Usage[2]=0.00
 Usage[3]=0.00
 Usage[4]=0.00
 Usage[5]=0.00
 Usage[6]=0.00
 Usage[7]=0.00
-Usage[8]=3.12
-Usage[9]=1.56
+Usage[8]=1.56
+Usage[9]=0.00
+Usage[10]=0.00
+Usage[11]=0.00
+
+[19:29:41] Client: go_mqtt_client
+Memory usage=79%
+CPU usage (combined)=0.64%
+Usage per CPU:
+Usage[0]=7.69
+Usage[1]=0.00
+Usage[2]=0.00
+Usage[3]=0.00
+Usage[4]=0.00
+Usage[5]=0.00
+Usage[6]=0.00
+Usage[7]=0.00
+Usage[8]=1.59
+Usage[9]=0.00
+Usage[10]=0.00
+Usage[11]=0.00
+
+[19:29:44] Client: go_mqtt_client
+Memory usage=79%
+CPU usage (combined)=0.65%
+Usage per CPU:
+Usage[0]=8.96
+Usage[1]=0.00
+Usage[2]=0.00
+Usage[3]=0.00
+Usage[4]=1.54
+Usage[5]=0.00
+Usage[6]=0.00
+Usage[7]=0.00
+Usage[8]=0.00
+Usage[9]=0.00
+Usage[10]=0.00
+Usage[11]=0.00
+
+[19:29:48] Client: go_mqtt_client
+Memory usage=79%
+CPU usage (combined)=1.29%
+Usage per CPU:
+Usage[0]=8.96
+Usage[1]=0.00
+Usage[2]=0.00
+Usage[3]=0.00
+Usage[4]=0.00
+Usage[5]=0.00
+Usage[6]=0.00
+Usage[7]=0.00
+Usage[8]=0.00
+Usage[9]=0.00
 Usage[10]=0.00
 Usage[11]=1.56
 
-[18:33:07] go_mqtt_client
-Memory usage=77%
-CPU usage (combined)=1.57%
+[19:29:51] Client: go_mqtt_client
+Memory usage=79%
+CPU usage (combined)=1.30%
 Usage per CPU:
-Usage[0]=3.08
+Usage[0]=4.62
 Usage[1]=0.00
-Usage[2]=13.64
+Usage[2]=0.00
 Usage[3]=0.00
-Usage[4]=1.52
-Usage[5]=13.64
-Usage[6]=1.56
+Usage[4]=0.00
+Usage[5]=0.00
+Usage[6]=0.00
 Usage[7]=0.00
-Usage[8]=1.54
-Usage[9]=1.59
-Usage[10]=1.54
+Usage[8]=0.00
+Usage[9]=0.00
+Usage[10]=0.00
 Usage[11]=0.00
 
-[18:33:10] go_mqtt_client
-Memory usage=77%
-CPU usage (combined)=0.78%
+[19:29:55] Client: go_mqtt_client
+Memory usage=79%
+CPU usage (combined)=0.53%
+Usage per CPU:
+Usage[0]=10.45
+Usage[1]=0.00
+Usage[2]=0.00
+Usage[3]=0.00
+Usage[4]=0.00
+Usage[5]=0.00
+Usage[6]=0.00
+Usage[7]=0.00
+Usage[8]=0.00
+Usage[9]=0.00
+Usage[10]=0.00
+Usage[11]=0.00
+
+[19:29:58] Client: go_mqtt_client
+Memory usage=79%
+CPU usage (combined)=0.64%
 Usage per CPU:
 Usage[0]=1.56
 Usage[1]=0.00
 Usage[2]=0.00
 Usage[3]=1.56
-Usage[4]=3.12
-Usage[5]=0.00
-Usage[6]=0.00
-Usage[7]=0.00
-Usage[8]=1.54
-Usage[9]=0.00
-Usage[10]=0.00
-Usage[11]=1.54
-
-[18:33:14] go_mqtt_client
-Memory usage=77%
-CPU usage (combined)=1.44%
-Usage per CPU:
-Usage[0]=11.94
-Usage[1]=12.50
-Usage[2]=3.12
-Usage[3]=4.69
-Usage[4]=3.12
-Usage[5]=3.12
-Usage[6]=4.69
-Usage[7]=4.69
-Usage[8]=3.12
-Usage[9]=14.06
-Usage[10]=1.56
-Usage[11]=4.69
-
-[18:33:17] go_mqtt_client
-Memory usage=77%
-CPU usage (combined)=1.04%
-Usage per CPU:
-Usage[0]=9.09
-Usage[1]=0.00
-Usage[2]=0.00
-Usage[3]=1.54
 Usage[4]=0.00
 Usage[5]=0.00
-Usage[6]=0.00
+Usage[6]=3.12
 Usage[7]=0.00
-Usage[8]=3.08
+Usage[8]=3.12
 Usage[9]=0.00
 Usage[10]=0.00
 Usage[11]=0.00
 
-[18:33:21] go_mqtt_client
-Memory usage=77%
-CPU usage (combined)=0.26%
+[19:30:02] Client: go_mqtt_client
+Memory usage=79%
+CPU usage (combined)=2.09%
 Usage per CPU:
-Usage[0]=4.62
-Usage[1]=1.56
-Usage[2]=3.12
-Usage[3]=3.12
-Usage[4]=3.08
-Usage[5]=3.08
-Usage[6]=1.54
-Usage[7]=1.54
+Usage[0]=6.06
+Usage[1]=0.00
+Usage[2]=0.00
+Usage[3]=0.00
+Usage[4]=1.56
+Usage[5]=0.00
+Usage[6]=0.00
+Usage[7]=0.00
 Usage[8]=0.00
 Usage[9]=0.00
-Usage[10]=1.54
-Usage[11]=0.00
-
-[18:33:25] go_mqtt_client
-Memory usage=77%
-CPU usage (combined)=1.05%
-Usage per CPU:
-Usage[0]=10.77
-Usage[1]=3.17
-Usage[2]=3.12
-Usage[3]=12.50
-Usage[4]=6.15
-Usage[5]=1.56
-Usage[6]=4.69
-Usage[7]=1.56
-Usage[8]=4.62
-Usage[9]=1.54
-Usage[10]=3.12
-Usage[11]=3.08
-
-[18:33:28] go_mqtt_client
-Memory usage=77%
-CPU usage (combined)=1.17%
-Usage per CPU:
-Usage[0]=6.25
-Usage[1]=0.00
-Usage[2]=9.38
-Usage[3]=0.00
-Usage[4]=7.58
-Usage[5]=0.00
-Usage[6]=1.56
-Usage[7]=0.00
-Usage[8]=1.56
-Usage[9]=1.56
-Usage[10]=1.56
-Usage[11]=0.00
-
-[18:33:32] go_mqtt_client
-Memory usage=77%
-CPU usage (combined)=1.71%
-Usage per CPU:
-Usage[0]=8.96
-Usage[1]=0.00
-Usage[2]=1.56
-Usage[3]=1.59
-Usage[4]=3.12
-Usage[5]=1.56
-Usage[6]=1.56
-Usage[7]=0.00
-Usage[8]=1.59
-Usage[9]=0.00
-Usage[10]=1.59
+Usage[10]=0.00
 Usage[11]=0.00
 
