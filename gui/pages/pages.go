@@ -24,8 +24,10 @@ var clientpassword string = ""
 var users []client.User
 var clientsgrid *tview.Grid
 
-// var str string = ""
 var counter int = 0
+
+// FLAGS
+var disablelogflag bool = false
 var disconnectflag bool = false
 var viewmonitoringflag bool = false
 
@@ -393,6 +395,19 @@ func createButtons(app *tview.Application, pages *tview.Pages, table *tview.Tabl
 		updateStatusBar(statusBar, "Лог очищен")
 	})
 
+	ableBtn := tview.NewButton("Открыть Лог")
+	ableBtn.SetSelectedFunc(func() {
+		disablelogflag = false
+		updateStatusBar(statusBar, "Лог открыт")
+	})
+
+	disableBtn := tview.NewButton("Закрыть Лог")
+	disableBtn.SetSelectedFunc(func() {
+		logView.Clear()
+		disablelogflag = true
+		updateStatusBar(statusBar, "Лог закрыт")
+	})
+
 	disconnectBtn := tview.NewButton("Отключиться")
 	disconnectBtn.SetSelectedFunc(func() {
 		disconnectHandler(pages)
@@ -400,11 +415,20 @@ func createButtons(app *tview.Application, pages *tview.Pages, table *tview.Tabl
 
 	// Добавляем кнопки
 	buttons.AddItem(startBtn, 10, 1, true)
+	buttons.AddItem(tview.NewBox(), 1, 0, false)
 	buttons.AddItem(viewBtn, 10, 1, true)
+	buttons.AddItem(tview.NewBox(), 1, 0, false)
 	buttons.AddItem(stopBtn, 10, 1, true)
+	buttons.AddItem(tview.NewBox(), 1, 0, false)
 	buttons.AddItem(saveBtn, 10, 1, true)
+	buttons.AddItem(tview.NewBox(), 1, 0, false)
 	buttons.AddItem(clearBtn, 10, 1, true)
-	buttons.AddItem(disconnectBtn, 10, 1, true)
+	buttons.AddItem(tview.NewBox(), 1, 0, false)
+	buttons.AddItem(disableBtn, 13, 3, true)
+	buttons.AddItem(tview.NewBox(), 1, 0, false)
+	buttons.AddItem(ableBtn, 13, 3, true)
+	buttons.AddItem(tview.NewBox(), 1, 0, false)
+	buttons.AddItem(disconnectBtn, 12, 1, true)
 
 	buttons.SetBorder(true).SetTitle(" Управление ")
 	return buttons
@@ -424,9 +448,12 @@ func StartInfoTextView(app *tview.Application, table *tview.Table, logView *tvie
 
 			app.QueueUpdateDraw(func() {
 				// Записываем в лог
-				fmt.Fprintf(logView, "[%s] %s\n",
-					time.Now().Format("15:04:05"),
-					systemData)
+				if !disablelogflag {
+
+					fmt.Fprintf(logView, "[%s] %s\n",
+						time.Now().Format("15:04:05"),
+						systemData)
+				}
 
 				// Парсим данные и обновляем таблицу
 				metrics := parseMetrics(systemData)
@@ -504,15 +531,6 @@ func extractValueAfterEquals(line string) string {
 		return strings.TrimSpace(parts[1])
 	}
 	return ""
-}
-
-func extractValue(line string) string {
-	// Извлекаем значение из строки типа "CPU Usage: 45%"
-	parts := strings.Split(line, "=")
-	if len(parts) > 1 {
-		return strings.TrimSpace(parts[1])
-	}
-	return line
 }
 
 func extractClientID(data string) string {
