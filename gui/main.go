@@ -11,8 +11,8 @@ func main() {
 	pages := tview.NewPages()
 
 	pgs.DbConnectPage(app, pages)
-	pgs.MqttClientsPage(app, pages)
-	pgs.MonitoringPage(app, pages)
+	//pgs.MqttClientsPage(app, pages)
+	//pgs.MonitoringPage(app, pages)
 
 	pages.SwitchToPage("DbConnectPage")
 

@@ -5,6 +5,7 @@ import (
 	"kurs/client"
 	"kurs/systeminfo"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,7 +24,7 @@ var clientpassword string = ""
 var users []client.User
 var clientsgrid *tview.Grid
 
-var str string = ""
+// var str string = ""
 var counter int = 0
 var disconnectflag bool = false
 var viewmonitoringflag bool = false
@@ -196,8 +197,10 @@ func AddUsersHandler(text string, rightmenu *tview.Table) string {
 
 }
 func connectHandler(app *tview.Application, pages *tview.Pages) {
-	//var str string
 
+	if clientID == "" {
+		return
+	}
 	client.ConnectMqtt(clientID, clientusername, clientpassword)
 	MonitoringPage(app, pages)
 	pages.SwitchToPage("MonitoringPage")
@@ -206,87 +209,349 @@ func connectHandler(app *tview.Application, pages *tview.Pages) {
 
 /*--MonitoringPage--*/
 func MonitoringPage(app *tview.Application, pages *tview.Pages) {
+	// Основной flex контейнер
+	mainFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 
-	info := tview.NewTextArea().SetPlaceholder("Here will be a system data")
-	info.SetBorder(true)
+	// Заголовок с информацией о клиенте
+	header := tview.NewTextView().
+		SetTextAlign(tview.AlignCenter).
+		SetDynamicColors(true)
+	header.SetBorder(false)
+	updateHeader(header)
 
-	btns := tview.NewFlex().SetDirection(tview.FlexColumn).
-		AddItem(tview.NewButton("Start monitoring").SetSelectedFunc(func() { client.Flag = true; StartInfoTextView(app, info) }), 0, 1, false).
-		AddItem(tview.NewButton("View monitoring").SetSelectedFunc(func() {
-			viewmonitoringflag = true
-			client.Flag = false
-			client.SubToInfoTopic()
-			StartViewMonitoring(app, info)
-		}), 0, 1, false).
-		AddItem(tview.NewButton("Stop monitoring").SetSelectedFunc(func() { client.Flag = false; viewmonitoringflag = false }), 0, 1, false).
-		AddItem(tview.NewButton("Save").SetSelectedFunc(saveInfoHandler), 0, 1, false).
-		AddItem(tview.NewButton("Clear").SetSelectedFunc(func() { info.SetText("", false) }), 0, 1, false).
-		AddItem(tview.NewButton("Disconnect").SetSelectedFunc(func() { disconnectHandler(pages) }), 0, 1, false)
-	btns.SetBorder(true)
-	btns.SetTitle("Menu")
+	// Таблица для отображения данных с группировкой по client ID
+	table := tview.NewTable().
+		SetBorders(true).
+		SetSelectable(true, false)
+	table.SetBorder(true).SetTitle(" Данные клиентов ")
 
-	flex := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(info, 0, 10, false).
-		AddItem(btns, 0, 1, false)
-	flex.SetBorder(true)
-	pages.AddPage("MonitoringPage", flex, true, false)
+	// Устанавливаем заголовки таблицы
+	setTableHeaders(table)
+
+	// Область для лога (если нужно показывать лог)
+	logView := tview.NewTextView().
+		SetDynamicColors(true).
+		SetScrollable(true)
+	logView.SetBorder(true).SetTitle(" Лог событий ")
+	logView.SetChangedFunc(func() {
+		app.Draw()
+		logView.ScrollToEnd()
+	})
+
+	// Статус бар
+	statusBar := tview.NewTextView().
+		SetDynamicColors(true)
+	statusBar.SetBorder(false)
+	updateStatusBar(statusBar, "Готов к работе")
+
+	// Кнопки управления
+	buttons := createButtons(app, pages, table, logView, statusBar)
+
+	// Инициализируем map для хранения данных клиентов
+	clientData = make(map[string]*ClientData)
+
+	// Сборка интерфейса
+	mainFlex.
+		AddItem(header, 1, 0, false).
+		AddItem(table, 0, 8, false).   // 80% для таблицы
+		AddItem(logView, 0, 2, false). // 20% для лога
+		AddItem(statusBar, 1, 0, false).
+		AddItem(buttons, 3, 0, true)
+
+	pages.AddPage("MonitoringPage", mainFlex, true, false)
 }
 
-func StartInfoTextView(app *tview.Application, info *tview.TextArea) {
+// Структура для хранения данных клиента
+type ClientData struct {
+	Metrics  map[string]string
+	LastSeen time.Time
+	RowIndex int
+}
 
+var clientData map[string]*ClientData
+var currentRow = 1 // начинаем с 1, т.к. 0 - заголовки
+
+func setTableHeaders(table *tview.Table) {
+	headers := []string{"Client ID", "CPU %", "Memory", "Disk", "Network", "Last Update"}
+	for i, header := range headers {
+		cell := tview.NewTableCell(header).
+			SetAlign(tview.AlignCenter).
+			SetTextColor(tcell.ColorYellow).
+			SetSelectable(false)
+		table.SetCell(0, i, cell)
+	}
+}
+
+func updateClientInTable(table *tview.Table, clientID string, metrics map[string]string) {
+	// Ищем клиента в данных
+	data, exists := clientData[clientID]
+	if !exists {
+		// Новый клиент - добавляем строку
+		data = &ClientData{
+			Metrics:  make(map[string]string),
+			LastSeen: time.Now(),
+			RowIndex: currentRow,
+		}
+		clientData[clientID] = data
+		currentRow++
+	}
+
+	// Обновляем метрики
+	for k, v := range metrics {
+		data.Metrics[k] = v
+	}
+	data.LastSeen = time.Now()
+
+	// Обновляем ячейки таблицы
+	table.SetCell(data.RowIndex, 0,
+		tview.NewTableCell(clientID).
+			SetAlign(tview.AlignLeft))
+
+	cpuValue := data.Metrics["cpu"]
+	table.SetCell(data.RowIndex, 1,
+		tview.NewTableCell(cpuValue).
+			SetAlign(tview.AlignCenter).
+			SetTextColor(getValueColor(cpuValue)))
+
+	table.SetCell(data.RowIndex, 2,
+		tview.NewTableCell(data.Metrics["memory"]).
+			SetAlign(tview.AlignCenter))
+
+	table.SetCell(data.RowIndex, 3,
+		tview.NewTableCell(data.Metrics["disk"]).
+			SetAlign(tview.AlignCenter))
+
+	table.SetCell(data.RowIndex, 4,
+		tview.NewTableCell(data.Metrics["network"]).
+			SetAlign(tview.AlignCenter))
+
+	table.SetCell(data.RowIndex, 5,
+		tview.NewTableCell(data.LastSeen.Format("15:04:05")).
+			SetAlign(tview.AlignCenter))
+}
+
+func getValueColor(value string) tcell.Color {
+	if strings.Contains(value, "%") {
+		// Анализируем процентное значение
+		if perc := extractPercentage(value); perc > 80 {
+			return tcell.ColorRed
+		} else if perc > 60 {
+			return tcell.ColorYellow
+		}
+	}
+	return tcell.ColorGreen
+}
+
+func extractPercentage(text string) int {
+	// Простая функция для извлечения числа из строки типа "45%"
+	if idx := strings.Index(text, "%"); idx != -1 {
+		if num, err := strconv.Atoi(strings.TrimSpace(text[:idx])); err == nil {
+			return num
+		}
+	}
+	return 0
+}
+
+func createButtons(app *tview.Application, pages *tview.Pages, table *tview.Table, logView *tview.TextView, statusBar *tview.TextView) *tview.Flex {
+	buttons := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	startBtn := tview.NewButton("Старт")
+	startBtn.SetSelectedFunc(func() {
+		client.Flag = true
+		viewmonitoringflag = false
+		StartInfoTextView(app, table, logView, statusBar)
+		updateStatusBar(statusBar, "Мониторинг запущен")
+	})
+
+	viewBtn := tview.NewButton("Просмотр")
+	viewBtn.SetSelectedFunc(func() {
+		viewmonitoringflag = true
+		client.Flag = false
+		client.SubToInfoTopic()
+		StartViewMonitoring(app, table, logView, statusBar)
+		updateStatusBar(statusBar, "Режим просмотра")
+	})
+
+	stopBtn := tview.NewButton("Стоп")
+	stopBtn.SetSelectedFunc(func() {
+		client.Flag = false
+		viewmonitoringflag = false
+		updateStatusBar(statusBar, "Остановлено")
+	})
+
+	saveBtn := tview.NewButton("Сохранить")
+	saveBtn.SetSelectedFunc(func() {
+		saveInfoHandler(getAllLogData(logView))
+		updateStatusBar(statusBar, "Данные сохранены в log.txt")
+	})
+
+	clearBtn := tview.NewButton("Очистить")
+	clearBtn.SetSelectedFunc(func() {
+		logView.SetText("")
+		updateStatusBar(statusBar, "Лог очищен")
+	})
+
+	disconnectBtn := tview.NewButton("Отключиться")
+	disconnectBtn.SetSelectedFunc(func() {
+		disconnectHandler(pages)
+	})
+
+	// Добавляем кнопки
+	buttons.AddItem(startBtn, 10, 1, true)
+	buttons.AddItem(viewBtn, 10, 1, true)
+	buttons.AddItem(stopBtn, 10, 1, true)
+	buttons.AddItem(saveBtn, 10, 1, true)
+	buttons.AddItem(clearBtn, 10, 1, true)
+	buttons.AddItem(disconnectBtn, 10, 1, true)
+
+	buttons.SetBorder(true).SetTitle(" Управление ")
+	return buttons
+}
+
+func getAllLogData(logView *tview.TextView) string {
+	return logView.GetText(false)
+}
+
+// Обновленные функции мониторинга
+func StartInfoTextView(app *tview.Application, table *tview.Table, logView *tview.TextView, statusBar *tview.TextView) {
 	go func() {
-		for {
-			if client.Flag == true {
-				counter += 1
-				for {
-					if client.Flag && counter < 2 {
-						time.Sleep(refreshInterval)
-						str = client.GetCurrentUser() + "\n" + systeminfo.GetMemUsage() + systeminfo.GetPercent() + systeminfo.GetPercentEvery()
-						app.QueueUpdateDraw(func() {
-							info.SetText(str, false)
-						})
+		for client.Flag {
+			time.Sleep(refreshInterval)
 
-						client.Publish("topic/info", str)
-					} else {
-						counter -= 1
-						break
-					}
-				}
-			} else if disconnectflag {
-				break
-			}
+			systemData := getSystemInfo()
 
+			app.QueueUpdateDraw(func() {
+				// Записываем в лог
+				fmt.Fprintf(logView, "[%s] %s\n",
+					time.Now().Format("15:04:05"),
+					systemData)
+
+				// Парсим данные и обновляем таблицу
+				metrics := parseMetrics(systemData)
+				clientID := client.GetCurrentUser()
+				updateClientInTable(table, clientID, metrics)
+
+				updateStatusBar(statusBar, "Отправка данных...")
+			})
+
+			client.Publish("topic/info", systemData)
 		}
 	}()
 }
 
-func StartViewMonitoring(app *tview.Application, info *tview.TextArea) {
+func StartViewMonitoring(app *tview.Application, table *tview.Table, logView *tview.TextView, statusBar *tview.TextView) {
 	go func() {
-		for {
-			if viewmonitoringflag {
-				counter += 1
-				for {
-					if viewmonitoringflag && counter < 2 && !client.Flag {
-						time.Sleep(refreshInterval)
-						str = info.GetText()
-						str += client.DisplayInfo
-						// str += client.Payload[0] + "\n"
-						// str += client.DisplayInfo
-						app.QueueUpdateDraw(func() {
-							info.SetText(str, true)
-						})
-					} else {
-						counter -= 1
-						break
-					}
-				}
-			} else if disconnectflag {
-				break
-			}
+		for viewmonitoringflag {
+			time.Sleep(refreshInterval)
 
+			if client.DisplayInfo != "" {
+				app.QueueUpdateDraw(func() {
+					// Записываем в лог
+					fmt.Fprintf(logView, "[%s] %s\n",
+						time.Now().Format("15:04:05"),
+						client.DisplayInfo)
+
+					// Парсим входящие данные и обновляем таблицу
+					metrics := parseMetrics(client.DisplayInfo)
+					clientID := extractClientID(client.DisplayInfo)
+					if clientID != "" {
+						updateClientInTable(table, clientID, metrics)
+					}
+
+					updateStatusBar(statusBar, "Получены новые данные")
+				})
+			}
 		}
 	}()
 }
+
+func parseMetrics(data string) map[string]string {
+	metrics := make(map[string]string)
+	lines := strings.Split(data, "\n")
+
+	for _, line := range lines {
+		if strings.Contains(line, "CPU") {
+			metrics["cpu"] = extractValue(line)
+		} else if strings.Contains(line, "Memory") {
+			metrics["memory"] = extractValue(line)
+		} else if strings.Contains(line, "Disk") {
+			metrics["disk"] = extractValue(line)
+		} else if strings.Contains(line, "Network") {
+			metrics["network"] = extractValue(line)
+		}
+	}
+
+	return metrics
+}
+
+func extractValue(line string) string {
+	// Извлекаем значение из строки типа "CPU Usage: 45%"
+	parts := strings.Split(line, ":")
+	if len(parts) > 1 {
+		return strings.TrimSpace(parts[1])
+	}
+	return line
+}
+
+func extractClientID(data string) string {
+	// Парсим client ID из данных
+	lines := strings.Split(data, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Client:") {
+			parts := strings.Split(line, ":")
+			if len(parts) > 1 {
+				return strings.TrimSpace(parts[1])
+			}
+		}
+	}
+	return ""
+}
+
+// Остальные функции остаются без изменений
+func updateHeader(header *tview.TextView) {
+	clientID := client.GetCurrentUser()
+	if clientID == "" {
+		fmt.Fprintf(header, "[red]Не подключено к MQTT[white]")
+		return
+	}
+	fmt.Fprintf(header, "Клиент: %s | Брокер: %s", clientID, client.Broker)
+}
+
+func updateStatusBar(statusBar *tview.TextView, message string) {
+	now := time.Now().Format("15:04:05")
+	var status string
+	if client.Flag {
+		status = "[green]ВКЛ[white]"
+	} else if viewmonitoringflag {
+		status = "[blue]ПРОСМОТР[white]"
+	} else {
+		status = "[red]ВЫКЛ[white]"
+	}
+	statusBar.SetText(fmt.Sprintf("[%s] %s | %s", now, status, message))
+}
+
+func getSystemInfo() string {
+	memUsage := systeminfo.GetMemUsage()
+	percent := systeminfo.GetPercent()
+	percentEvery := systeminfo.GetPercentEvery()
+
+	return fmt.Sprintf("Client: %s\n%s%s%s",
+		client.GetCurrentUser(),
+		memUsage,
+		percent,
+		percentEvery)
+}
+
+func saveInfoHandler(data string) {
+	fo, err := os.Create("log.txt")
+	if err != nil {
+		return
+	}
+	defer fo.Close()
+	fo.Write([]byte(data))
+}
+
+//end
 
 func flaghandler(app *tview.Application) {
 	// for {
@@ -297,24 +562,24 @@ func flaghandler(app *tview.Application) {
 
 }
 
-func saveInfoHandler() {
+// func saveInfoHandler(str string) {
 
-	fo, err := os.Create("log.txt")
-	if err != nil {
-		panic(err)
-	}
+// 	fo, err := os.Create("log.txt")
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	if _, err := fo.Write([]byte(str)); err != nil {
+// 	if _, err := fo.Write([]byte(str)); err != nil {
 
-	}
+// 	}
 
-	// close fo on exit and check for its returned error
-	defer func() {
-		if err := fo.Close(); err != nil {
-			panic(err)
-		}
-	}()
-}
+// 	// close fo on exit and check for its returned error
+// 	defer func() {
+// 		if err := fo.Close(); err != nil {
+// 			panic(err)
+// 		}
+// 	}()
+// }
 
 func disconnectHandler(pages *tview.Pages) {
 	client.Flag = false
