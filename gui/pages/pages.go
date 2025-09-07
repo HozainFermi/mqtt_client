@@ -441,65 +441,71 @@ func getAllLogData(logView *tview.TextView) string {
 // Обновленные функции мониторинга
 func StartInfoTextView(app *tview.Application, table *tview.Table, logView *tview.TextView, statusBar *tview.TextView) {
 	go func() {
-		for client.Flag {
-			time.Sleep(refreshInterval)
+		for {
+			if client.Flag {
 
-			systemData := getSystemInfo()
+				time.Sleep(refreshInterval)
 
-			app.QueueUpdateDraw(func() {
-				// Записываем в лог
-				if !disablelogflag {
+				systemData := getSystemInfo()
 
-					fmt.Fprintf(logView, "[%s] %s\n",
-						time.Now().Format("15:04:05"),
-						systemData)
-				}
-
-				// Парсим данные и обновляем таблицу
-				metrics := parseMetrics(systemData)
-				clientID := client.GetCurrentUser()
-				updateClientInTable(table, clientID, metrics)
-
-				updateStatusBar(statusBar, "Отправка данных...")
-			})
-
-			client.Publish("topic/info", systemData)
-		}
-	}()
-}
-
-func StartViewMonitoring(app *tview.Application, table *tview.Table, logView *tview.TextView, statusBar *tview.TextView) {
-	go func() {
-		for viewmonitoringflag {
-			time.Sleep(refreshInterval)
-
-			if client.DisplayInfo != "" {
 				app.QueueUpdateDraw(func() {
 					// Записываем в лог
 					if !disablelogflag {
 
 						fmt.Fprintf(logView, "[%s] %s\n",
 							time.Now().Format("15:04:05"),
-							client.DisplayInfo)
-
+							systemData)
 					}
 
-					// Парсим входящие данные и обновляем таблицу
-					metrics := parseMetrics(client.DisplayInfo)
-					clientID := extractClientID(client.DisplayInfo)
-					if clientID != "" {
-						updateClientInTable(table, clientID, metrics)
-					}
+					// Парсим данные и обновляем таблицу
+					metrics := parseMetrics(systemData)
+					clientID := client.GetCurrentUser()
+					updateClientInTable(table, clientID, metrics)
 
-					err := client.SaveMonitoringData(clientID, client.DisplayInfo)
-					if err != nil {
-						fmt.Fprintf(logView, "[red]Ошибка сохранения в БД: %s[white]\n", err.Error())
-					} else {
-						//fmt.Fprintf(logView, "[green]Данные сохранены в БД[white]\n")
-					}
-
-					updateStatusBar(statusBar, "Получены новые данные")
+					updateStatusBar(statusBar, "Отправка данных...")
 				})
+
+				client.Publish("topic/info", systemData)
+			}
+		}
+	}()
+}
+
+func StartViewMonitoring(app *tview.Application, table *tview.Table, logView *tview.TextView, statusBar *tview.TextView) {
+	go func() {
+		for {
+			if viewmonitoringflag && client.Flag {
+
+				time.Sleep(refreshInterval)
+
+				if client.DisplayInfo != "" {
+					app.QueueUpdateDraw(func() {
+						// Записываем в лог
+						if !disablelogflag {
+
+							fmt.Fprintf(logView, "[%s] %s\n",
+								time.Now().Format("15:04:05"),
+								client.DisplayInfo)
+
+						}
+
+						// Парсим входящие данные и обновляем таблицу
+						metrics := parseMetrics(client.DisplayInfo)
+						clientID := extractClientID(client.DisplayInfo)
+						if clientID != "" {
+							updateClientInTable(table, clientID, metrics)
+						}
+
+						err := client.SaveMonitoringData(clientID, client.DisplayInfo)
+						if err != nil {
+							fmt.Fprintf(logView, "[red]Ошибка сохранения в БД: %s[white]\n", err.Error())
+						} else {
+							//fmt.Fprintf(logView, "[green]Данные сохранены в БД[white]\n")
+						}
+
+						updateStatusBar(statusBar, "Получены новые данные")
+					})
+				}
 			}
 		}
 	}()
